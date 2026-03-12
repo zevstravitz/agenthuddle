@@ -1,5 +1,7 @@
 # Huddle
 
+![Huddle screenshot](./codex-screenshot.png)
+
 Open-source, local-first spoken huddles for coding agents.
 
 This repo now ships a macOS CLI plus the Swift popup/recording helper. There is
