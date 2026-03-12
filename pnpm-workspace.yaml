@@ -1,0 +1,7 @@
+packages:
+  - apps/huddle
+  - packages/config
+  - packages/logger
+  - packages/shared
+  - packages/stt
+  - packages/voice-eleven

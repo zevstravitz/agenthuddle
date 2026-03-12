@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_PATH="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE_PATH" ]]; do
+  SOURCE_DIR="$(cd "$(dirname "$SOURCE_PATH")" && pwd)"
+  SOURCE_PATH="$(readlink "$SOURCE_PATH")"
+  [[ "$SOURCE_PATH" != /* ]] && SOURCE_PATH="$SOURCE_DIR/$SOURCE_PATH"
+done
+
+ROOT_DIR="$(cd "$(dirname "$SOURCE_PATH")" && pwd)"
+
+if [[ -f "$ROOT_DIR/pnpm-workspace.yaml" ]]; then
+  if [[ -x "$ROOT_DIR/node_modules/.bin/tsx" ]]; then
+    exec "$ROOT_DIR/node_modules/.bin/tsx" "$ROOT_DIR/apps/huddle/src/huddle.ts" "$@"
+  fi
+
+  exec pnpm --dir "$ROOT_DIR" --filter huddle-cli exec tsx "$ROOT_DIR/apps/huddle/src/huddle.ts" "$@"
+fi
+
+if [[ -f "$ROOT_DIR/apps/huddle/dist/huddle.js" ]]; then
+  exec node "$ROOT_DIR/apps/huddle/dist/huddle.js" "$@"
+fi
+
+exec pnpm --dir "$ROOT_DIR" --filter huddle-cli exec tsx "$ROOT_DIR/apps/huddle/src/huddle.ts" "$@"

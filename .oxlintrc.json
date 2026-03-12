@@ -1,0 +1,7 @@
+{
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/coverage/**",
+    "packages/codex-app-client/src/generated/**"
+  ]
+}

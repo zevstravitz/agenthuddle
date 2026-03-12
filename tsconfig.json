@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/logger" },
+    { "path": "./packages/config" },
+    { "path": "./packages/stt" },
+    { "path": "./packages/voice-eleven" },
+    { "path": "./apps/huddle" }
+  ]
+}

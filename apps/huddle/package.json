@@ -1,0 +1,30 @@
+{
+  "name": "huddle-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "huddle": "./dist/huddle.js"
+  },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "build:release": "node ./scripts/build-release.mjs",
+    "dev": "tsx src/huddle.ts",
+    "lint": "oxlint src",
+    "package:homebrew": "node ./scripts/package-homebrew.mjs",
+    "package:macos": "node ./scripts/package-macos.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@huddle/config": "workspace:*",
+    "@huddle/logger": "workspace:*",
+    "@huddle/shared": "workspace:*",
+    "@huddle/stt": "workspace:*",
+    "@huddle/voice-eleven": "workspace:*",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.1"
+  }
+}
