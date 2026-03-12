@@ -4,10 +4,7 @@
 
 Open-source, local-first spoken huddles for coding agents.
 
-This repo now ships a macOS CLI plus the Swift popup/recording helper. There is
-no hosted web app, no auth service, no billing flow, and no database. Users run
-everything locally and provide their own API tokens for speech-to-text and
-text-to-speech.
+This includes a macOS CLI plus the Swift popup/recording helper. Users run everything locally and provide their own API tokens for speech-to-text and text-to-speech.
 
 ## What It Does
 
