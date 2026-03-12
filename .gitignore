@@ -17,3 +17,4 @@ apps/huddle/release
 *.sqlite-wal
 .vercel
 apps/huddle/.huddle/huddles.log
+.huddle/huddles.log
