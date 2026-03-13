@@ -18,6 +18,7 @@ If it prints `[huddle missed]`, proceed with your best reasonable assumption ins
 After opening a huddle, wait for the user's spoken feedback and keep polling for up to 90 seconds before giving up on that huddle.
 If the user gives feedback in a huddle, treat that feedback as the next instruction: implement it directly when clear, or ask a short follow-up clarification in huddle if a specific decision is still missing.
 If huddle tells you to respond with `huddle "<message>" -c <conversation_id>`, use that exact command for the next turn so it reuses the existing open window.
+If huddle prints `[huddle keepalive] conversation_id=<conversation_id>`, the huddle window is still open. While that window remains open, emit that same keepalive line to the console roughly every 15 seconds so the agent runtime knows you are still active, and do not exit voluntarily.
 If you want to end a kept-open conversation without sending another message, run `huddle close -c <conversation_id>`. If you do nothing, the kept-open window closes itself after 45 seconds.
 
 If the user says "huddle me", use this command specifically:

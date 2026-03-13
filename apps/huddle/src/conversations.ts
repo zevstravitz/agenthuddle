@@ -54,3 +54,9 @@ export function formatConversationContinueInstruction(
 ): string {
   return `To respond invoke with ${formatConversationContinueCommand(conversationId)}. That conversation_id corresponds to the existing open window.`;
 }
+
+export function formatConversationKeepaliveMessage(
+  conversationId: string,
+): string {
+  return `[huddle keepalive] conversation_id=${conversationId}`;
+}

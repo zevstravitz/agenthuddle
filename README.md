@@ -118,6 +118,7 @@ Keep each huddle prompt short and specific. Briefly say what you have done so fa
 Treat the command output as the user's answer.
 If it prints `[huddle declined]` or `[huddle cancelled]`, continue with a normal typed follow-up instead of retrying repeatedly.
 If it prints `[huddle missed]`, proceed with your best reasonable assumption instead of blocking on a reply.
+If it prints `[huddle keepalive] conversation_id=<conversation_id>`, the huddle window is still open. While it remains open, emit that same keepalive line to the console roughly every 15 seconds and do not exit voluntarily.
 ```
 
 ## Local Config File

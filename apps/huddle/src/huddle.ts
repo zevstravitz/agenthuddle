@@ -35,6 +35,7 @@ import {
   createConversationId,
   formatConversationContinueCommand,
   formatConversationContinueInstruction,
+  formatConversationKeepaliveMessage,
   resolveConversationPaths,
   type HuddleConversationMetadata,
   type HuddleConversationPaths,
@@ -42,7 +43,7 @@ import {
 
 const program = new Command();
 const DEFAULT_MAX_SECONDS = 90;
-const DEFAULT_HUDDLE_SPEECH_SPEED = 1.12;
+const DEFAULT_HUDDLE_SPEECH_SPEED = 1.2;
 const HUDDLE_DECLINED = '[huddle declined]';
 const HUDDLE_CANCELLED = '[huddle cancelled]';
 const HUDDLE_MISSED = '[huddle missed]';
@@ -1023,6 +1024,13 @@ function writeResult(input: {
           ...(input.keepConversationOpen
             ? { keepConversationOpen: true }
             : {}),
+          ...(input.keepConversationOpen && input.conversationId
+            ? {
+                keepaliveMessage: formatConversationKeepaliveMessage(
+                  input.conversationId,
+                ),
+              }
+            : {}),
         },
         null,
         2,
@@ -1051,6 +1059,9 @@ function writeResult(input: {
   if (input.keepConversationOpen && input.conversationId) {
     process.stdout.write(
       `${formatConversationContinueInstruction(input.conversationId)}\n`,
+    );
+    process.stdout.write(
+      `${formatConversationKeepaliveMessage(input.conversationId)}\n`,
     );
   }
 }
