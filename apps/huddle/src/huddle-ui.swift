@@ -232,6 +232,8 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
   private var keyMonitor: Any?
   private var isClosing = false
   private var conversationHistory: [ConversationMessage] = []
+  private var conversationHistoryDirty = true
+  private var cachedHistoryContentHeight: CGFloat = 0
 
   init(runtime: HuddleRuntimeConfig) {
     self.runtime = runtime
@@ -514,10 +516,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
       if modifiers.isEmpty && isSpace {
         writeCurrentResponse(
           mode: "speaking",
-          status: "accepted",
-          audioPath: nil,
-          transcriptText: nil,
-          keepConversationOpen: nil
+          status: "accepted"
         )
         return true
       }
@@ -564,10 +563,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
       } catch {
         writeCurrentResponse(
           mode: "record",
-          status: "cancelled",
-          audioPath: nil,
-          transcriptText: nil,
-          keepConversationOpen: nil
+          status: "cancelled"
         )
         closeApplication()
       }
@@ -1065,30 +1061,32 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     let titleY: CGFloat
     let requiredCardHeight: CGFloat
 
-    if currentMode == .review {
+    if currentMode == .review || currentMode == .record {
       let promptHeight = measuredReviewPromptHeight()
       promptFrameHeight = 0
       promptBubbleVisible = true
-      let editorHeight = measuredEditorHeight()
+
+      let middleContentHeight = currentMode == .review
+        ? measuredEditorHeight()
+        : recordingBubbleHeight
+
       helperY = buttonTop + helperControlsGap
-      let editorY = helperY + helperHeight + reviewSectionGap
-      promptY = editorY + editorHeight + reviewSectionGap
+      let middleContentY = helperY + helperHeight + reviewSectionGap
+      promptY = middleContentY + middleContentHeight + reviewSectionGap
       historyY = promptY + promptHeight + historySpacing
       subtitleY = historyY + historyVisibleHeight + subtitlePromptGap
       titleY = subtitleY + subtitleLayoutHeight + titleToSubtitleGap
       requiredCardHeight = titleY + titleHeight + topPadding
 
       historyScrollView.isHidden = !historyVisible
-      waveformContainer.isHidden = true
-      editorScrollView.isHidden = false
-      recordingBubbleView.isHidden = true
+      waveformContainer.isHidden = currentMode == .review
+      editorScrollView.isHidden = currentMode != .review
+      recordingBubbleView.isHidden = currentMode != .record
       promptLabel.isHidden = true
       reviewPromptBubbleView.isHidden = false
 
-      let promptX = textLeft
-      let editorX = cardWidth - textLeft - reviewEditorBubbleWidth
       reviewPromptBubbleView.frame = NSRect(
-        x: promptX,
+        x: textLeft,
         y: promptY,
         width: reviewPromptBubbleWidth,
         height: promptHeight
@@ -1105,68 +1103,34 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
         width: textWidth,
         height: historyVisibleHeight
       )
-      editorScrollView.frame = NSRect(
-        x: editorX,
-        y: editorY,
-        width: reviewEditorBubbleWidth,
-        height: editorHeight
-      )
-      editorView.frame = NSRect(x: 0, y: 0, width: reviewEditorBubbleWidth, height: editorHeight)
-      editorView.textContainer?.containerSize = NSSize(
-        width: reviewEditorBubbleWidth - 16,
-        height: .greatestFiniteMagnitude
-      )
-    } else if currentMode == .record {
-      let promptHeight = measuredReviewPromptHeight()
-      promptFrameHeight = 0
-      promptBubbleVisible = true
-      helperY = buttonTop + helperControlsGap
-      let recordingY = helperY + helperHeight + reviewSectionGap
-      promptY = recordingY + recordingBubbleHeight + reviewSectionGap
-      historyY = promptY + promptHeight + historySpacing
-      subtitleY = historyY + historyVisibleHeight + subtitlePromptGap
-      titleY = subtitleY + subtitleLayoutHeight + titleToSubtitleGap
-      requiredCardHeight = titleY + titleHeight + topPadding
 
-      historyScrollView.isHidden = !historyVisible
-      waveformContainer.isHidden = false
-      editorScrollView.isHidden = true
-      recordingBubbleView.isHidden = false
-      promptLabel.isHidden = true
-      reviewPromptBubbleView.isHidden = false
-
-      let promptX = textLeft
-      let editorX = cardWidth - textLeft - reviewEditorBubbleWidth
-      reviewPromptBubbleView.frame = NSRect(
-        x: promptX,
-        y: promptY,
-        width: reviewPromptBubbleWidth,
-        height: promptHeight
-      )
-      reviewPromptLabel.frame = NSRect(
-        x: reviewBubbleHorizontalPadding,
-        y: reviewBubbleVerticalPadding,
-        width: reviewPromptBubbleWidth - (reviewBubbleHorizontalPadding * 2),
-        height: promptHeight - (reviewBubbleVerticalPadding * 2)
-      )
-      historyScrollView.frame = NSRect(
-        x: textLeft,
-        y: historyY,
-        width: textWidth,
-        height: historyVisibleHeight
-      )
-      recordingBubbleView.frame = NSRect(
-        x: editorX,
-        y: recordingY,
-        width: reviewEditorBubbleWidth,
-        height: recordingBubbleHeight
-      )
-      waveformContainer.frame = NSRect(
-        x: recordingBubbleView.frame.minX + ((reviewEditorBubbleWidth - recordingWaveformWidth) / 2),
-        y: recordingBubbleView.frame.minY + ((recordingBubbleHeight - waveformHeight) / 2),
-        width: recordingWaveformWidth,
-        height: waveformHeight
-      )
+      let middleContentX = cardWidth - textLeft - reviewEditorBubbleWidth
+      if currentMode == .review {
+        editorScrollView.frame = NSRect(
+          x: middleContentX,
+          y: middleContentY,
+          width: reviewEditorBubbleWidth,
+          height: middleContentHeight
+        )
+        editorView.frame = NSRect(x: 0, y: 0, width: reviewEditorBubbleWidth, height: middleContentHeight)
+        editorView.textContainer?.containerSize = NSSize(
+          width: reviewEditorBubbleWidth - 16,
+          height: .greatestFiniteMagnitude
+        )
+      } else {
+        recordingBubbleView.frame = NSRect(
+          x: middleContentX,
+          y: middleContentY,
+          width: reviewEditorBubbleWidth,
+          height: recordingBubbleHeight
+        )
+        waveformContainer.frame = NSRect(
+          x: recordingBubbleView.frame.minX + ((reviewEditorBubbleWidth - recordingWaveformWidth) / 2),
+          y: recordingBubbleView.frame.minY + ((recordingBubbleHeight - waveformHeight) / 2),
+          width: recordingWaveformWidth,
+          height: waveformHeight
+        )
+      }
     } else {
       promptBubbleVisible = shouldShowAgentPromptBubble()
       let promptHeight = promptBubbleVisible ? measuredPromptBubbleHeight() : measuredPromptHeight()
@@ -1394,6 +1358,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
           text: promptText
         )
       )
+      conversationHistoryDirty = true
     }
 
     if !normalizedUserText.isEmpty {
@@ -1403,14 +1368,21 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
           text: normalizedUserText
         )
       )
+      conversationHistoryDirty = true
     }
   }
 
   private func rebuildConversationHistoryView(contentWidth: CGFloat) -> CGFloat {
+    guard conversationHistoryDirty else {
+      return cachedHistoryContentHeight
+    }
+    conversationHistoryDirty = false
+
     historyContentView.subviews.forEach { $0.removeFromSuperview() }
 
     guard !conversationHistory.isEmpty else {
       historyContentView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: 1)
+      cachedHistoryContentHeight = 0
       return 0
     }
 
@@ -1425,6 +1397,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
 
     let contentHeight = max(currentY - historyRowGap, 0)
     historyContentView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
+    cachedHistoryContentHeight = contentHeight
     return contentHeight
   }
 
@@ -1493,10 +1466,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
       clearTimeout()
       writeCurrentResponse(
         mode: "invite",
-        status: "accepted",
-        audioPath: nil,
-        transcriptText: nil,
-        keepConversationOpen: nil
+        status: "accepted"
       )
     case .record:
       finishRecording(submitTranscriptDirectly: false)
@@ -1505,10 +1475,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     case .close:
       writeCurrentResponse(
         mode: "close",
-        status: "accepted",
-        audioPath: nil,
-        transcriptText: nil,
-        keepConversationOpen: nil
+        status: "accepted"
       )
       closeApplication()
     case .standby:
@@ -1525,10 +1492,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
       clearTimeout()
       writeCurrentResponse(
         mode: "invite",
-        status: "declined",
-        audioPath: nil,
-        transcriptText: nil,
-        keepConversationOpen: nil
+        status: "declined"
       )
       closeApplication()
     case .record:
@@ -1536,19 +1500,13 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     case .review:
       writeCurrentResponse(
         mode: "review",
-        status: "cancelled",
-        audioPath: nil,
-        transcriptText: nil,
-        keepConversationOpen: nil
+        status: "cancelled"
       )
       closeApplication()
     case .close:
       writeCurrentResponse(
         mode: "close",
-        status: "kept_open",
-        audioPath: nil,
-        transcriptText: nil,
-        keepConversationOpen: nil
+        status: "kept_open"
       )
       configureStandby()
     default:
@@ -1576,10 +1534,8 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     writeCurrentResponse(
       mode: "review",
       status: "accepted",
-      audioPath: nil,
       transcriptText: submittedTranscript,
-      keepConversationOpen: keepConversationOpen,
-      submitTranscriptDirectly: nil
+      keepConversationOpen: keepConversationOpen
     )
 
     if keepConversationOpen {
@@ -1658,8 +1614,6 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
       mode: "record",
       status: "accepted",
       audioPath: currentCommand?.recordingPath,
-      transcriptText: nil,
-      keepConversationOpen: nil,
       submitTranscriptDirectly: submitTranscriptDirectly
     )
   }
@@ -1673,11 +1627,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     }
     writeCurrentResponse(
       mode: "record",
-      status: "cancelled",
-      audioPath: nil,
-      transcriptText: nil,
-      keepConversationOpen: nil,
-      submitTranscriptDirectly: nil
+      status: "cancelled"
     )
     closeApplication()
   }
@@ -1685,9 +1635,9 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
   private func writeCurrentResponse(
     mode: String,
     status: String,
-    audioPath: String?,
-    transcriptText: String?,
-    keepConversationOpen: Bool?,
+    audioPath: String? = nil,
+    transcriptText: String? = nil,
+    keepConversationOpen: Bool? = nil,
     submitTranscriptDirectly: Bool? = nil
   ) {
     guard let command = currentCommand else {
@@ -1734,7 +1684,6 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     try? FileManager.default.removeItem(at: runtime.readyMarker)
     FileManager.default.createFile(atPath: runtime.closedMarker.path, contents: Data())
     window.orderOut(nil)
-    NSApplication.shared.stop(nil)
     NSApplication.shared.terminate(nil)
   }
 
@@ -1743,10 +1692,7 @@ final class HuddleUIController: NSObject, NSWindowDelegate {
     stopRingSound()
     writeCurrentResponse(
       mode: "invite",
-      status: "missed",
-      audioPath: nil,
-      transcriptText: nil,
-      keepConversationOpen: nil
+      status: "missed"
     )
     closeApplication()
   }
